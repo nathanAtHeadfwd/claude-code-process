@@ -142,7 +142,8 @@ Sla elke spec op als `development/iteration-N-naam.md`:
 | Gem. Indexatie | Jaarlijkse prijsstijging T2-jaar | indexatiefactoren[T2_jaar] − 1 | 0% – 10% |
 
 ## Keuzes vastgelegd
-<!-- Elke implementatiekeuze die niet rechtstreeks uit de bronbestanden volgt -->
+<!-- Niveau 1 (laag risico): beslissen, vastleggen in deze tabel, kort vermelden bij oplevering. -->
+<!-- Niveau 2 (hoog risico of moeilijk omkeerbaar): stoppen en vragen vóór implementatie. -->
 | Keuze | Beslissing | Reden |
 |---|---|---|
 | CORS-policy | allow_origins=["*"] | Interne tool, geen auth, alle origins toegestaan |
@@ -178,9 +179,15 @@ Elke keuze die Claude maakt en die **niet expliciet in de spec staat**, is een e
 
 Het probleem is niet dat Claude de verkeerde keuze maakte — soms was de keuze prima. Het probleem is dat de keuze **onzichtbaar** was. Niemand wist dat die keuze gemaakt was, dus niemand kon hem reviewen, betwisten of erop bouwen.
 
-**De regel:**
+**De twee niveaus:**
 
-> Elke keuze die niet uit de bronbestanden of spec volgt, hoort in de tabel **Keuzes vastgelegd** — vóórdat implementatie begint. Als Claude tijdens implementatie een keuze tegenkomt die niet vastgelegd is, stopt hij en vraagt hij: *"Hier moet ik kiezen tussen X en Y. Wat is jouw voorkeur?"*
+**Niveau 1 — Beslissen en notificeren** (standaard):
+Lage impact, goed omkeerbaar. Claude maakt de keuze, legt hem vast in de tabel **Keuzes vastgelegd**, en noemt hem kort bij oplevering.
+Voorbeelden: CORS-policy, env var namen, hoe een SPA-fallback geïmplementeerd wordt, DB-bestandspad in Docker.
+
+**Niveau 2 — Stoppen en vragen**:
+Hoge impact of moeilijk omkeerbaar. Claude stopt vóór implementatie.
+Voorbeelden: datamodelwijziging, security-impacterende keuze, fundamentele architectuurkeuze die meerdere iteraties beïnvloedt, keuze die bronbestanden of specs tegenspreekt.
 
 **Hoe je dit afdwingt in de planfase:**
 
@@ -188,7 +195,7 @@ Voeg aan het einde van elke iteratiespec een expliciete stap toe:
 
 ```
 Vóór implementatie: loop de tabel 'Keuzes vastgelegd' door.
-Ontbreekt er een keuze? Vul hem in of stel hem als vraag.
+Ontbreekt er een keuze? Voeg hem toe (niveau 1) of stel hem als vraag (niveau 2).
 Begin pas als de tabel compleet is.
 ```
 
@@ -347,7 +354,7 @@ Fase 2 — Per iteratie
   │   ├─ UI-metriekdefinities (wat ziet de gebruiker, welke formule)
   │   ├─ Keuzes vastgelegd (elke implementatiekeuze die niet uit bronbestanden volgt)
   │   └─ Acceptance criteria
-  ├─ Implementeren (Claude stopt bij onverwachte keuzes en vraagt)
+  ├─ Implementeren (niveau 1: beslissen en notificeren; niveau 2: stoppen en vragen)
   ├─ Mini-audit → PR → CI groen → merge
   └─ Beslissingenlogboek bijwerken
 
