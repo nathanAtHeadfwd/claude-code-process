@@ -135,6 +135,19 @@ Sla elke spec op als `development/iteration-N-naam.md`:
 ## Eindresultaat
 <wat er zichtbaar/werkend moet zijn na deze iteratie>
 
+## UI-metriekdefinities
+<!-- Verplicht voor elke waarde die getoond wordt aan de gebruiker -->
+| Metriek | Wat de gebruiker ziet | Formule / bron | Verwacht bereik |
+|---|---|---|---|
+| Gem. Indexatie | Jaarlijkse prijsstijging T2-jaar | indexatiefactoren[T2_jaar] − 1 | 0% – 10% |
+
+## Keuzes vastgelegd
+<!-- Elke implementatiekeuze die niet rechtstreeks uit de bronbestanden volgt -->
+| Keuze | Beslissing | Reden |
+|---|---|---|
+| CORS-policy | allow_origins=["*"] | Interne tool, geen auth, alle origins toegestaan |
+| DB-locatie in Docker | /data/vddview.duckdb via DB_PATH env var | Volume op /data voor persistentie |
+
 ## Taken
 - [ ] A1: ...
 - [ ] A2: ...
@@ -148,6 +161,35 @@ Sla elke spec op als `development/iteration-N-naam.md`:
 - [ ] `tsc -b --noEmit` geeft 0 fouten
 - [ ] `docker build` slaagt zonder fouten
 - [ ] Alle unit tests slagen
+```
+
+### Executieve beslissingen: het patroon dat extra werk veroorzaakt
+
+Elke keuze die Claude maakt en die **niet expliciet in de spec staat**, is een executieve beslissing. Die zijn onzichtbaar — ze staan niet in de code, niet in de commit message, nergens — totdat ze later een probleem veroorzaken.
+
+**Voorbeelden uit VDDview:**
+
+| Wat Claude deed | Wat er niet vastgelegd was | Gevolg |
+|---|---|---|
+| `indexatie`-veld gebruiken voor de KPI-kaart | Wat "Gem. Indexatie" voor de gebruiker betekent | Kaart toonde −5.5% i.p.v. +5.8% |
+| `allow_origins=["*"]` bij Docker-integratie | Of CORS verruimd mocht worden | Stille securitykeuze, niet opgemerkt |
+| DB-pad via env var oplossen | Hoe data-persistentie in Docker werkte | Correcte keuze, maar niet afleidbaar uit de spec |
+| SPA-fallback route toevoegen aan FastAPI | Of de frontend via FastAPI of apart geserved werd | Correcte keuze, niet gedocumenteerd |
+
+Het probleem is niet dat Claude de verkeerde keuze maakte — soms was de keuze prima. Het probleem is dat de keuze **onzichtbaar** was. Niemand wist dat die keuze gemaakt was, dus niemand kon hem reviewen, betwisten of erop bouwen.
+
+**De regel:**
+
+> Elke keuze die niet uit de bronbestanden of spec volgt, hoort in de tabel **Keuzes vastgelegd** — vóórdat implementatie begint. Als Claude tijdens implementatie een keuze tegenkomt die niet vastgelegd is, stopt hij en vraagt hij: *"Hier moet ik kiezen tussen X en Y. Wat is jouw voorkeur?"*
+
+**Hoe je dit afdwingt in de planfase:**
+
+Voeg aan het einde van elke iteratiespec een expliciete stap toe:
+
+```
+Vóór implementatie: loop de tabel 'Keuzes vastgelegd' door.
+Ontbreekt er een keuze? Vul hem in of stel hem als vraag.
+Begin pas als de tabel compleet is.
 ```
 
 ### Mini-audit na elke iteratie
@@ -301,17 +343,17 @@ Fase 1 — Plan
   └─ Masterplan in /plan, iteratielijst, CI-pipeline + Docker in iteratie 1
 
 Fase 2 — Per iteratie
-  └─ Spec schrijven → implementeren → mini-audit → PR → CI groen → merge
+  ├─ Spec schrijven
+  │   ├─ UI-metriekdefinities (wat ziet de gebruiker, welke formule)
+  │   ├─ Keuzes vastgelegd (elke implementatiekeuze die niet uit bronbestanden volgt)
+  │   └─ Acceptance criteria
+  ├─ Implementeren (Claude stopt bij onverwachte keuzes en vraagt)
+  ├─ Mini-audit → PR → CI groen → merge
+  └─ Beslissingenlogboek bijwerken
 
 Fase 3 — Parallelisatie
   ├─ Golven van 2–3 agents (bij rate-limiting, disjuncte bestandssets)
   └─ Git worktrees (zonder rate-limiting, volledige isolatie per agent)
-
-Fase 4 — PR en merge
-  └─ CI groen, acceptance criteria doorlopen, merge naar main
-
-Fase 5 — Beslissingenlogboek
-  └─ Non-obvious keuzes vastleggen in docs/decisions.md
 ```
 
 ### Prioriteiten bij opzet
