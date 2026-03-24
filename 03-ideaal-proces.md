@@ -47,8 +47,27 @@ Stel een masterplan op dat bevat:
 - Een **iteratielijst** met voor elke iteratie: doel, eindresultaat en kritieke bronbestanden
 - Non-obvious implementatiedetails afgeleid uit de bronbestanden
 - Een `docs/decisions.md` als startpunt voor het beslissingenlogboek
+- Een **security baseline** (zie hieronder)
 
 Sla het plan op als `.claude/plans/masterplan.md`. Dit bestand wordt automatisch geladen in elke vervolgconversatie.
+
+### Security baseline: Defense in Depth
+
+Het **Defense in Depth** principe is het uitgangspunt voor alle implementatiebeslissingen: meerdere onafhankelijke beveiligingslagen, zodat het falen van één laag niet direct tot een compromis leidt.
+
+Leg bij het masterplan per laag expliciet een beslissing vast — ook als het antwoord "niet van toepassing voor deze versie" is:
+
+| Laag | Minimale eis | Voorbeeldmaatregelen |
+|---|---|---|
+| Input validatie | Verplicht | Saniteer alle externe input; valideer types, lengtes en formaten aan de serverkant |
+| Authenticatie & autorisatie | Beoordeel per scope | Least privilege; geen onnodige endpoints publiek bereikbaar |
+| Transport | Verplicht | HTTPS in productie; geen gevoelige data in URL-parameters of logs |
+| Data & secrets | Verplicht | Geen secrets in code of versiebeheer; `.env`-bestanden in `.gitignore` |
+| Logging & monitoring | Verplicht | Log security-relevante events; log nooit gevoelige data (wachtwoorden, tokens, BSN) |
+| Afhankelijkheden | Verplicht | Geen bekende CVE's; pin versies; voer `npm audit` / `pip-audit` uit in CI |
+| Netwerk & CORS | Beoordeel per scope | Beperk origins, methoden en headers tot wat daadwerkelijk nodig is |
+
+**Koppeling aan het twee-niveaus model**: elke keuze die een van deze lagen verzwakt of omzeilt is automatisch **Niveau 2** (stoppen en vragen), ongeacht hoe klein de keuze verder lijkt.
 
 ### GitHub Actions direct in iteratie 1
 
@@ -188,6 +207,8 @@ Voorbeelden: CORS-policy, env var namen, hoe een SPA-fallback geïmplementeerd w
 **Niveau 2 — Stoppen en vragen**:
 Hoge impact of moeilijk omkeerbaar. Claude stopt vóór implementatie.
 Voorbeelden: datamodelwijziging, security-impacterende keuze, fundamentele architectuurkeuze die meerdere iteraties beïnvloedt, keuze die bronbestanden of specs tegenspreekt.
+
+> **Security-uitzondering**: elke keuze die een laag uit de Defense in Depth baseline verzwakt of omzeilt is altijd Niveau 2 — ook als de keuze verder laag-impact lijkt. Zie de security baseline in Fase 1.
 
 **Hoe je dit afdwingt in de planfase:**
 
