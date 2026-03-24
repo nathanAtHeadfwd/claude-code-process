@@ -162,13 +162,94 @@ Voordeel: TypeScript-buildfouten (zoals `noUnusedLocals`) worden al bij de eerst
 
 ---
 
+## 7. GitHub Actions voor CI/CD binnen GitHub Flow
+
+### Waarom dit belangrijk is
+
+Zonder geautomatiseerde checks vertrouwen we erop dat ontwikkelaars (of Claude) handmatig alle verificatiestappen uitvoeren vóór een merge. In de praktijk worden stappen overgeslagen, vergeten of pas ontdekt na deployment. GitHub Actions maakt verificatie een harde eis: een PR kan pas gemerged worden als de pipeline groen is.
+
+### Minimale actie-set per project
+
+Voor de meeste projecten zijn de volgende workflows voldoende om GitHub Flow te ondersteunen:
+
+#### `ci.yml` — draait op elke PR en push naar `main`
+
+```yaml
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck       # tsc -b --noEmit
+      - run: npm run lint            # eslint
+      - run: npm run test            # jest / vitest
+      - run: docker build .          # valideer dat de productie-build slaagt
+```
+
+#### `deploy.yml` — draait alleen op merge naar `main`
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    needs: test          # alleen deployen als CI groen is
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: ./scripts/deploy.sh     # of Railway / Fly.io / etc.
+```
+
+### Koppeling aan branch-protection
+
+Activeer in de GitHub-repository-instellingen:
+
+- **Require status checks to pass before merging** → voeg `test` toe als verplichte check
+- **Require branches to be up to date before merging** → voorkomt dat een PR een verouderde `main` merged
+
+Hiermee is het onmogelijk om code te mergen die de CI-pipeline niet doorstaat.
+
+### Aanbevolen stappen per project type
+
+| Project type | Verplichte stappen | Optionele stappen |
+|---|---|---|
+| TypeScript/Node | typecheck, lint, unit tests, docker build | e2e tests (Playwright) |
+| Python | mypy, ruff/flake8, pytest | coverage report |
+| Full-stack | frontend build, backend tests, docker build | integration tests |
+
+### Relatie tot andere verbeteringen
+
+- **Verbetering 2** (TypeScript-strictheid): `npm run typecheck` in de pipeline dwingt `noUnusedLocals` af op elke PR, niet alleen lokaal.
+- **Verbetering 6** (Docker-build vanaf iteratie 1): de `docker build` stap in `ci.yml` vervangt de handmatige verificatiestap in PR-checklists.
+- **Verbetering 4** (Acceptance criteria): machine-leesbare criteria kunnen als aparte test-suite draaien binnen de CI-job.
+
+---
+
 ## Samenvatting prioriteiten
 
 | Prioriteit | Verbetering | Inspanning |
 |---|---|---|
+| ★★★ | UI-metriekdefinities vóór implementatie schrijven | Laag — één tabel per component |
 | ★★★ | Mini-audit per iteratie (herbruikbare audit-agent) | Laag — één prompttemplate |
 | ★★★ | Docker-build als verificatiestap vanaf iteratie 1 | Laag — Dockerfile kopiëren |
 | ★★ | TypeScript `noUnusedLocals` aanzetten | Laag — één tsconfig-wijziging |
 | ★★ | Acceptance criteria als machine-leesbare checklist | Middel — spec-format aanpassen |
 | ★★ | Agent-golven i.p.v. alles tegelijk | Middel — coördinatie aanpassen |
+| ★★ | GitHub Actions CI/CD pipeline instellen | Middel — eenmalig per project |
 | ★ | Beslissingenlogboek bijhouden | Hoog — disciplineert schrijven |

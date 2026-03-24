@@ -82,6 +82,35 @@ Elke iteratie volgde dit patroon:
 | **Iteratiespec** | Geeft Claude een scherp afgebakende taak met expliciete verificatiestappen |
 | **Verwijzingen naar bronbestanden** | Voorkomt dat Claude logica opnieuw uitvindt of afwijkt van de referentie |
 | **Verificatiescripts / voorbeeldoutput** | Maakt geautomatiseerde correctheidscontrole mogelijk |
+| **UI-metriektdefinities** | Zie sectie hieronder — verplicht voor elke weergegeven waarde |
+
+---
+
+## UI-metriekdefinities: schrijf eerst, implementeer daarna
+
+Dit is de meest onderschatte input. Een API-contract beschrijft welke velden teruggegeven worden. Het beschrijft *niet* wat de gebruiker verwacht te zien.
+
+**Wat er mis gaat zonder deze definitie:**
+
+In VDDview was er een `indexatie`-veld in de tijdreeks. Claude implementeerde de "Gem. Indexatie" KPI-kaart als het gemiddelde van dat veld. Het veld bevat echter de *achterwaartse normalisatiefactor* (hoe prijzen teruggerekend worden naar het indexatiejaar), niet de jaarlijkse prijsstijging. Het resultaat: de kaart toont −5.5% terwijl een gebruiker +5.8% verwacht. Correct gerekend, verkeerde grootheid — en pas ontdekt bij visuele inspectie van de draaiende applicatie.
+
+**De regel:** voor elke weergegeven waarde — KPI-kaart, grafiekwaarde, tabelkolom — schrijf je vóór implementatie één zin op die beschrijft wat de gebruiker ziet en hoe de waarde berekend wordt.
+
+### Format
+
+```markdown
+## [Componentnaam] — metriekdefinities
+
+| Metriek | Wat de gebruiker ziet | Formule / bron | Verwacht bereik |
+|---|---|---|---|
+| Gem. Indexatie | Jaarlijkse prijsstijging voor het T2-jaar | indexatiefactoren[T2_jaar] - 1 | 0% – 10% |
+| PxQ T2 | Totale kosten in T2-jaar (nominaal) | som van PxQ_werkelijk of PxQ_voorspeld | > 0 |
+| Δ PxQ % | Relatieve kostenstijging T1 → T2 | (PxQ_T2 - PxQ_T1) / PxQ_T1 | −20% – +50% |
+```
+
+### Wanneer dit document aanmaken
+
+Maak de metriekdefinities aan als onderdeel van de iteratiespec, vóórdat de implementatie begint. Eén tabel per component is voldoende. Als je de definitie niet op kunt schrijven, is de feature nog niet rijp genoeg om te implementeren.
 
 ---
 
